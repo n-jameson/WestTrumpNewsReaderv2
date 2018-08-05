@@ -4,12 +4,17 @@ import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -23,7 +28,11 @@ public class ReaderActivity extends AppCompatActivity implements LoaderManager.L
     public static final String LOG_TAG = ReaderActivity.class.getName();
 
     private static final String GUARDIAN_REQUEST_URL =
-            "https://content.guardianapis.com/search?q=donald%20trump%20OR%20kanye%20west&show-tags=contributor&api-key=test";
+            "https://content.guardianapis.com/search?";
+
+//    private static final String GUARDIAN_REQUEST_URL =
+//            "https://content.guardianapis.com/search?q=donald%20trump%20OR%20kanye%20west&show-tags=contributor&api-key=9d8fa2a7-5c59-477b-ac19-d87592abf5ce";
+
 
     private static final int ARTICLE_LOADER_ID = 1;
 
@@ -33,10 +42,30 @@ public class ReaderActivity extends AppCompatActivity implements LoaderManager.L
 
     private ArticleAdapter mAdapter;
 
+
+
     @Override
     public Loader<List<Article>> onCreateLoader(int i, Bundle bundle) {
+
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        String whatToDisplay = sharedPrefs.getString(
+                getString(R.string.settings_what_to_display_key),
+                getString(R.string.settings_what_to_display_default));
+
+        Uri baseUri = Uri.parse(GUARDIAN_REQUEST_URL);
+
+        Uri.Builder uriBuilder=baseUri.buildUpon();
+
+        uriBuilder.appendQueryParameter("q", whatToDisplay);
+        uriBuilder.appendQueryParameter("show-tags", "contributor");
+        uriBuilder.appendQueryParameter("api-key", "9d8fa2a7-5c59-477b-ac19-d87592abf5ce");
+        Log.e("URL ", "Url: " + uriBuilder.toString());
+        return new ArticleLoader(this,uriBuilder.toString());
+
+
         // Create a new loader for the given URL
-        return new ArticleLoader(this, GUARDIAN_REQUEST_URL);
+//        return new ArticleLoader(this, GUARDIAN_REQUEST_URL);
     }
 
     @Override
@@ -126,5 +155,24 @@ public class ReaderActivity extends AppCompatActivity implements LoaderManager.L
                 startActivity(websiteIntent);
             }
         });
+    }
+
+    @Override
+    // This method initialize the contents of the Activity's options menu.
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the Options Menu we specified in XML
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
